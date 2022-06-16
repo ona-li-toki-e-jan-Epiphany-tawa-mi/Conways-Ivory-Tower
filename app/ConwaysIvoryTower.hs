@@ -3,43 +3,43 @@
 module ConwaysIvoryTower (main) where
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Interact
-import Data.Bifunctor
 import Data.List
-import Data.Fixed (mod')
+import Data.Fixed
 
 type Cell = (Int, Int)
 type Board = [Cell]
 
--- #TODO Optimize like hell.
+-- #TODO Optimize with some kind of hashset.
 iterateBoard :: Board -> Board
 iterateBoard []    = []
-iterateBoard board = tryReproduction board (stepCells board [])
+iterateBoard board = stepCells board []
     where stepCells :: Board -> Board -> Board
           stepCells [] accumulator          = accumulator
-          stepCells (cell:rest) accumulator = if countAliveNeighbors cell >= 2 && countAliveNeighbors cell < 4
-              then stepCells rest (cell : accumulator)
-              else stepCells rest accumulator
+          stepCells (cell:rest) accumulator = if aliveNeighbors >= 2 && aliveNeighbors < 4
+              then stepCells rest (cell : tryAddOffspring)
+              else stepCells rest tryAddOffspring
+              where aliveNeighbors :: Int
+                    aliveNeighbors = length $ findAlive possibleNeighbors
+                    findAlive :: [Cell] -> [Cell]
+                    findAlive = filter (`elem` board)
 
-          tryReproduction :: Board -> Board -> Board
-          tryReproduction [] accumulator          = accumulator
-          tryReproduction (cell:rest) accumulator = tryReproduction rest
-                                                                    (getOffspring ++ accumulator)
-              where getOffspring :: [Cell]
-                    getOffspring = filter willBeOffspring deadNeighbors
+                    tryAddOffspring :: [Cell]
+                    tryAddOffspring
+                      | not $ null findOffspring = findOffspring ++ accumulator
+                      | otherwise                = accumulator
 
-                    willBeOffspring :: Cell -> Bool
-                    willBeOffspring deadCell = countAliveNeighbors deadCell == 3
-
-                    deadNeighbors :: [Cell]
-                    deadNeighbors = filter (not . (`elem` accumulator)) $ filter (not . (`elem` board)) (possibleNeighbors cell)
-
-          countAliveNeighbors :: Cell -> Int
-          countAliveNeighbors cell = length $ filter (`elem` board) (possibleNeighbors cell)
-
-          possibleNeighbors :: Cell -> [Cell]
-          possibleNeighbors cell = [(fst cell + dx, snd cell + dy) | dx <- [-1, 0, 1]
-                                                              , dy <- [-1, 0, 1]
-                                                              , (dx, dy) /= (0, 0)]
+                    findOffspring :: [Cell]
+                    findOffspring = [deadNeighbor | deadNeighbor <- possibleNeighbors
+                                                  , deadNeighbor `notElem` board
+                                                  , deadNeighbor `notElem` accumulator
+                                                  , length (findAlive $ findPossibleNeighbors deadNeighbor) == 3]
+                
+                    possibleNeighbors :: [Cell]
+                    possibleNeighbors = findPossibleNeighbors cell
+                    findPossibleNeighbors :: Cell -> [Cell]
+                    findPossibleNeighbors cell = [(fst cell + dx, snd cell + dy) | dx <- [-1, 0, 1]
+                                                                                 , dy <- [-1, 0, 1]
+                                                                                 , (dx, dy) /= (0, 0)]
 
 iterateGame :: Float -> Game -> Game
 iterateGame deltaTime game = game { board  = if not $ paused game then iterateBoard (board game) else board game
@@ -73,22 +73,22 @@ drawGrid (Game {board = board, camera = camera}) = translate horizontalCentering
                  [translate offset 0.0 line | line <- replicate verticalLineCount $ Line [(0.0, 0.0), (0.0, verticalLineSize)]
                                             | offset <- [0.0 .. fromIntegral verticalLineCount]]]
     where horizontalLineSize :: Float
-          horizontalLineSize = fromIntegral (fst screenSize) / zoom camera
+          horizontalLineSize = fromIntegral (fst screenSize)
           verticalLineSize :: Float
-          verticalLineSize = fromIntegral (snd screenSize) / zoom camera
+          verticalLineSize   = fromIntegral (snd screenSize)
 
           horizontalLineCount :: Int
-          horizontalLineCount = ceiling $ fromIntegral (fst screenSize)
+          horizontalLineCount = ceiling $ max 200.0 $ 1.0 + fromIntegral (fst screenSize)
           verticalLineCount :: Int
-          verticalLineCount = ceiling $ fromIntegral (fst screenSize)
+          verticalLineCount   = ceiling $ max 200.0 $ 1.0 +  fromIntegral (snd screenSize)
 
           cameraHorizontalOffset :: Float
           cameraHorizontalOffset = y camera `mod'` cellSize
           cameraVerticalOffset :: Float
-          cameraVerticalOffset = x camera `mod'` cellSize
+          cameraVerticalOffset   = x camera `mod'` cellSize
 
           verticalCenteringOffset :: Float
-          verticalCenteringOffset = fromIntegral (fst screenSize) / (-2.0)
+          verticalCenteringOffset   = fromIntegral (fst screenSize) / (-2.0)
           horizontalCenteringOffset :: Float
           horizontalCenteringOffset = fromIntegral (snd screenSize) / (-2.0)
 
