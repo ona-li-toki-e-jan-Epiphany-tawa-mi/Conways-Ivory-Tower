@@ -45,9 +45,16 @@ iterateGame :: Float -> Game -> Game
 iterateGame deltaTime game = game { board  = if not $ paused game then iterateBoard (board game) else board game
                                   , camera = gameCamera { x    = x gameCamera + deltaX gameCamera * deltaTime
                                                         , y    = y gameCamera + deltaY gameCamera * deltaTime
-                                                        , zoom = zoom gameCamera + deltaZoom gameCamera * deltaTime}}
+                                                        , zoom = min zoomMaximum $ max nextZoom zoomMinimum}}
     where gameCamera :: Camera
           gameCamera = camera game
+
+          nextZoom :: Float
+          nextZoom = zoom gameCamera + deltaZoom gameCamera * deltaTime
+          zoomMinimum :: Float
+          zoomMinimum = 0.05
+          zoomMaximum :: Float
+          zoomMaximum = 100.0
 
 
 
@@ -105,32 +112,43 @@ drawGame game = pictures [ color white $ drawCells game
 
 
 
--- #TODO Restrict zoom values, possibly make non-linear to speed up zooming.
 gameInteract :: Event -> Game -> Game
 gameInteract (EventKey (Char key) keyState _ _) game =
     case key of
-         'w' -> game {camera = gameCamera {deltaY    = if keyState == Down then moveSpeed  else 0.0}}
-         's' -> game {camera = gameCamera {deltaY    = if keyState == Down then -moveSpeed else 0.0}}
-         'a' -> game {camera = gameCamera {deltaX    = if keyState == Down then -moveSpeed else 0.0}}
-         'd' -> game {camera = gameCamera {deltaX    = if keyState == Down then moveSpeed  else 0.0}}
-         '1' -> game {camera = gameCamera {deltaZoom = if keyState == Down then zoomSpeed  else 0.0}}
-         '2' -> game {camera = gameCamera {deltaZoom = if keyState == Down then -zoomSpeed else 0.0}}
+         'w' -> game {camera = gameCamera {deltaY    = if keyState == Down then  scaledMoveSpeed else 0.0}}
+         's' -> game {camera = gameCamera {deltaY    = if keyState == Down then -scaledMoveSpeed else 0.0}}
+         'a' -> game {camera = gameCamera {deltaX    = if keyState == Down then -scaledMoveSpeed else 0.0}}
+         'd' -> game {camera = gameCamera {deltaX    = if keyState == Down then  scaledMoveSpeed else 0.0}}
+         '1' -> game {camera = gameCamera {deltaZoom = if keyState == Down then  scaledZoomSpeed else 0.0}}
+         '2' -> game {camera = gameCamera {deltaZoom = if keyState == Down then -scaledZoomSpeed else 0.0}}
          'g' -> if keyState == Down then game {showGrid = not $ showGrid game} else game
          _   -> game
     where gameCamera :: Camera
           gameCamera = camera game
+
+          scaledMoveSpeed :: Float
+          scaledMoveSpeed = moveSpeed / zoom gameCamera
+
+          scaledZoomSpeed :: Float
+          scaledZoomSpeed = zoomSpeed ** zoom gameCamera
 gameInteract (EventKey (SpecialKey key) keyState _ _) game =
     case key of
-         KeyUp       -> game {camera = gameCamera {deltaY    = if keyState == Down then moveSpeed  else 0.0}}
-         KeyDown     -> game {camera = gameCamera {deltaY    = if keyState == Down then -moveSpeed else 0.0}}
-         KeyLeft     -> game {camera = gameCamera {deltaX    = if keyState == Down then -moveSpeed else 0.0}}
-         KeyRight    -> game {camera = gameCamera {deltaX    = if keyState == Down then moveSpeed  else 0.0}}
-         KeyPageUp   -> game {camera = gameCamera {deltaZoom = if keyState == Down then zoomSpeed  else 0.0}}
-         KeyPageDown -> game {camera = gameCamera {deltaZoom = if keyState == Down then -zoomSpeed else 0.0}}
+         KeyUp       -> game {camera = gameCamera {deltaY    = if keyState == Down then  scaledMoveSpeed else 0.0}}
+         KeyDown     -> game {camera = gameCamera {deltaY    = if keyState == Down then -scaledMoveSpeed else 0.0}}
+         KeyLeft     -> game {camera = gameCamera {deltaX    = if keyState == Down then -scaledMoveSpeed else 0.0}}
+         KeyRight    -> game {camera = gameCamera {deltaX    = if keyState == Down then  scaledMoveSpeed else 0.0}}
+         KeyPageUp   -> game {camera = gameCamera {deltaZoom = if keyState == Down then  scaledZoomSpeed else 0.0}}
+         KeyPageDown -> game {camera = gameCamera {deltaZoom = if keyState == Down then -scaledZoomSpeed else 0.0}}
          KeySpace    -> if keyState == Down then game {paused = not $ paused game} else game
          _           -> game
     where gameCamera :: Camera
           gameCamera = camera game
+
+          scaledMoveSpeed :: Float
+          scaledMoveSpeed = moveSpeed / zoom gameCamera
+
+          scaledZoomSpeed :: Float
+          scaledZoomSpeed = zoomSpeed ** zoom gameCamera
 gameInteract (EventKey (MouseButton mouseButton) Down _ position) game =
     case mouseButton of
          LeftButton -> if not $ mouseToCellCoordinates `HS.member` board game
@@ -173,7 +191,7 @@ iterationsPerSecond :: Int
 iterationsPerSecond = 10
 
 moveSpeed :: Float
-moveSpeed = 40.0
+moveSpeed = 120.0
 zoomSpeed :: Float
 zoomSpeed = 1.0
 cellSize :: Float
