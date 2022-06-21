@@ -31,6 +31,7 @@ library
   build-depends:
       base >=4.7 && <5
     , gloss >=1.13.1.1 && <14
+    , unordered-containers >=0.2.17.0 && <0.2.18
   default-language: Haskell2010
 
 executable ConwaysIvoryTower-exe
@@ -44,6 +45,7 @@ executable ConwaysIvoryTower-exe
       ConwaysIvoryTower
     , base >=4.7 && <5
     , gloss >=1.13.1.1 && <14
+    , unordered-containers >=0.2.17.0 && <0.2.18
   default-language: Haskell2010
 
 test-suite ConwaysIvoryTower-test
@@ -58,4 +60,5 @@ test-suite ConwaysIvoryTower-test
       ConwaysIvoryTower
     , base >=4.7 && <5
     , gloss >=1.13.1.1 && <14
+    , unordered-containers >=0.2.17.0 && <0.2.18
   default-language: Haskell2010

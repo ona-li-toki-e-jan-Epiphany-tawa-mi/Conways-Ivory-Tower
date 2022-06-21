@@ -3,36 +3,36 @@
 module ConwaysIvoryTower (main) where
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Interact
-import Data.List
+import Data.List as L
 import Data.Fixed
+import Data.HashSet as HS
 
 type Cell = (Int, Int)
-type Board = [Cell]
+type Board = HashSet Cell
 
--- #TODO Optimize with some kind of hashset.
+-- #TODO Switch over to using indexes with this function.
 iterateBoard :: Board -> Board
-iterateBoard []    = []
-iterateBoard board = stepCells board []
-    where stepCells :: Board -> Board -> Board
+iterateBoard board = stepCells (HS.toList board) HS.empty
+    where stepCells :: [Cell] -> Board -> Board
           stepCells [] accumulator          = accumulator
           stepCells (cell:rest) accumulator = if aliveNeighbors >= 2 && aliveNeighbors < 4
-              then stepCells rest (cell : tryAddOffspring)
+              then stepCells rest (HS.insert cell tryAddOffspring)
               else stepCells rest tryAddOffspring
               where aliveNeighbors :: Int
                     aliveNeighbors = length $ findAlive possibleNeighbors
                     findAlive :: [Cell] -> [Cell]
-                    findAlive = filter (`elem` board)
+                    findAlive = L.filter (`HS.member` board)
 
-                    tryAddOffspring :: [Cell]
+                    tryAddOffspring :: Board
                     tryAddOffspring
-                      | not $ null findOffspring = findOffspring ++ accumulator
-                      | otherwise                = accumulator
+                      | not $ L.null findOffspring = HS.union findOffspring accumulator
+                      | otherwise                   = accumulator
 
-                    findOffspring :: [Cell]
-                    findOffspring = [deadNeighbor | deadNeighbor <- possibleNeighbors
-                                                  , deadNeighbor `notElem` board
-                                                  , deadNeighbor `notElem` accumulator
-                                                  , length (findAlive $ findPossibleNeighbors deadNeighbor) == 3]
+                    findOffspring :: Board
+                    findOffspring = HS.fromList [deadNeighbor | deadNeighbor <- possibleNeighbors
+                                                              , not $ deadNeighbor `HS.member` board
+                                                              , not $ deadNeighbor `HS.member` accumulator
+                                                              , length (findAlive $ findPossibleNeighbors deadNeighbor) == 3]
                 
                     possibleNeighbors :: [Cell]
                     possibleNeighbors = findPossibleNeighbors cell
@@ -59,14 +59,14 @@ drawCells :: Game -> Picture
 drawCells (Game {board = board, camera = camera}) = 
     scale (zoom camera) (zoom camera) $ translate (-(x camera)) (-(y camera)) $
     scale cellSize cellSize $ pictures $ 
-        zipWith (uncurry translate) (map floatize board)
-                                    (replicate (length board) (rectangleSolid 1.0 1.0))
+        zipWith (uncurry translate) (L.map floatize $ HS.toList board)
+                                    (replicate (HS.size board) (rectangleSolid 1.0 1.0))
     where floatize :: Cell -> (Float, Float)
           floatize (x, y) = (fromIntegral x, fromIntegral y)
 
 -- #TODO Generate correct number of lines for zoom.
 drawGrid :: Game -> Picture
-drawGrid (Game {board = board, camera = camera}) = pictures
+drawGrid (Game {camera = camera}) = pictures
     [ translate (-halfHorizontal) 0.0 $ scale 1.0 (zoom camera) $ translate 0.0 horizontalCameraOffset $ pictures 
         [translate 0.0 offset line | line <- replicate horizontalLineCount $ Line [ (0.0, 0.0)
                                                                                   , (horizontalLineSize, 0.0)]
@@ -102,8 +102,6 @@ drawGrid (Game {board = board, camera = camera}) = pictures
 drawGame :: Game -> Picture
 drawGame game = pictures [ color white $ drawCells game
                          , if showGrid game then color white $ drawGrid game else Blank]
-    where gameCamera :: Camera
-          gameCamera = camera game
 
 
 
@@ -135,11 +133,11 @@ gameInteract (EventKey (SpecialKey key) keyState _ _) game =
           gameCamera = camera game
 gameInteract (EventKey (MouseButton mouseButton) Down _ position) game =
     case mouseButton of
-         LeftButton -> if mouseToCellCoordinates `notElem` board game
-             then game {board = mouseToCellCoordinates : board game}
-             else game {board = delete mouseToCellCoordinates (board game)}
+         LeftButton -> if not $ mouseToCellCoordinates `HS.member` board game
+             then game {board = HS.insert mouseToCellCoordinates (board game)}
+             else game {board = HS.delete mouseToCellCoordinates (board game)}
          _          -> game
-    where mouseToCellCoordinates :: (Int, Int)
+    where mouseToCellCoordinates :: Cell
           mouseToCellCoordinates =
               ( floor $ (fst position / zoom gameCamera + x gameCamera) / cellSize + 0.5
               , floor $ (snd position / zoom gameCamera + y gameCamera) / cellSize + 0.5)
@@ -156,7 +154,7 @@ data Game = Game { board    :: Board
                  , showGrid :: Bool}
 
 newGame :: Game
-newGame = Game { board  = []
+newGame = Game { board  = HS.empty
                , camera = Camera { x = 0.0,    deltaX = 0.0
                                  , y = 0.0,    deltaY = 0.0
                                  , zoom = 1.0, deltaZoom = 0.0}
