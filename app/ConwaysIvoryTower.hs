@@ -56,41 +56,48 @@ data Camera = Camera { x :: Float,    deltaX :: Float
                      , zoom :: Float, deltaZoom :: Float}
 
 drawCells :: Game -> Picture
-drawCells (Game {board = board, camera = camera}) = scale (zoom camera) (zoom camera) $ translate (-(x camera)) (-(y camera)) $ 
-    scale cellSize cellSize $ translate (cellSize / 2) (cellSize / 2) $ pictures $
+drawCells (Game {board = board, camera = camera}) = 
+    scale (zoom camera) (zoom camera) $ translate (-(x camera)) (-(y camera)) $
+    scale cellSize cellSize $ pictures $ 
         zipWith (uncurry translate) (map floatize board)
                                     (replicate (length board) (rectangleSolid 1.0 1.0))
     where floatize :: Cell -> (Float, Float)
           floatize (x, y) = (fromIntegral x, fromIntegral y)
 
--- #TODO factor in zoom of camera.
+-- #TODO Generate correct number of lines for zoom.
 drawGrid :: Game -> Picture
-drawGrid (Game {board = board, camera = camera}) = translate horizontalCenteringOffset verticalCenteringOffset $ 
-    pictures [ translate 0.0 cameraHorizontalOffset $ scale 1.0 cellSize $ pictures 
-                 [translate 0.0 offset line | line <- replicate horizontalLineCount $ Line [(0.0, 0.0), (horizontalLineSize, 0.0)]
-                                            | offset <- [0.0 .. fromIntegral horizontalLineCount]]
-             , translate cameraVerticalOffset 0.0 $ scale cellSize 1.0 $ pictures 
-                 [translate offset 0.0 line | line <- replicate verticalLineCount $ Line [(0.0, 0.0), (0.0, verticalLineSize)]
-                                            | offset <- [0.0 .. fromIntegral verticalLineCount]]]
+drawGrid (Game {board = board, camera = camera}) = pictures
+    [ translate (-halfHorizontal) 0.0 $ scale 1.0 (zoom camera) $ translate 0.0 horizontalCameraOffset $ pictures 
+        [translate 0.0 offset line | line <- replicate horizontalLineCount $ Line [ (0.0, 0.0)
+                                                                                  , (horizontalLineSize, 0.0)]
+                                   | offset <- horizontalLineOffsets]
+    , translate 0.0 (-halfVertical) $ scale (zoom camera) 1.0 $ translate verticalCameraOffset 0.0 $ pictures 
+        [translate offset 0.0 line | line <- replicate verticalLineCount $ Line [ (0.0, 0.0)
+                                                                                , (0.0, verticalLineSize)]
+                                   | offset <- verticalLineOffsets]]
     where horizontalLineSize :: Float
           horizontalLineSize = fromIntegral (fst screenSize)
+          halfHorizontal :: Float
+          halfHorizontal = horizontalLineSize / 2.0
           verticalLineSize :: Float
-          verticalLineSize   = fromIntegral (snd screenSize)
+          verticalLineSize = fromIntegral (snd screenSize)
+          halfVertical :: Float
+          halfVertical = verticalLineSize / 2.0
 
           horizontalLineCount :: Int
-          horizontalLineCount = ceiling $ max 200.0 $ 1.0 + fromIntegral (fst screenSize)
+          horizontalLineCount = length horizontalLineOffsets
           verticalLineCount :: Int
-          verticalLineCount   = ceiling $ max 200.0 $ 1.0 +  fromIntegral (snd screenSize)
+          verticalLineCount = length verticalLineOffsets
 
-          cameraHorizontalOffset :: Float
-          cameraHorizontalOffset = y camera `mod'` cellSize
-          cameraVerticalOffset :: Float
-          cameraVerticalOffset   = x camera `mod'` cellSize
+          horizontalLineOffsets :: [Float]
+          horizontalLineOffsets = [-halfVertical, -halfVertical + cellSize .. halfVertical]
+          verticalLineOffsets :: [Float]
+          verticalLineOffsets = [-halfHorizontal, -halfHorizontal + cellSize .. halfHorizontal]
 
-          verticalCenteringOffset :: Float
-          verticalCenteringOffset   = fromIntegral (fst screenSize) / (-2.0)
-          horizontalCenteringOffset :: Float
-          horizontalCenteringOffset = fromIntegral (snd screenSize) / (-2.0)
+          horizontalCameraOffset :: Float
+          horizontalCameraOffset = y camera `mod'` cellSize
+          verticalCameraOffset :: Float
+          verticalCameraOffset = x camera `mod'` cellSize
 
 drawGame :: Game -> Picture
 drawGame game = pictures [ color white $ drawCells game
@@ -100,6 +107,7 @@ drawGame game = pictures [ color white $ drawCells game
 
 
 
+-- #TODO Restrict zoom values, possibly make non-linear to speed up zooming.
 gameInteract :: Event -> Game -> Game
 gameInteract (EventKey (Char key) keyState _ _) game =
     case key of
@@ -133,8 +141,8 @@ gameInteract (EventKey (MouseButton mouseButton) Down _ position) game =
          _          -> game
     where mouseToCellCoordinates :: (Int, Int)
           mouseToCellCoordinates =
-              ( floor $ (fst position / zoom gameCamera + x gameCamera) / cellSize - cellSize / 2 + 0.5
-              , floor $ (snd position / zoom gameCamera + y gameCamera) / cellSize - cellSize / 2 + 0.5)
+              ( floor $ (fst position / zoom gameCamera + x gameCamera) / cellSize + 0.5
+              , floor $ (snd position / zoom gameCamera + y gameCamera) / cellSize + 0.5)
 
           gameCamera :: Camera
           gameCamera = camera game
