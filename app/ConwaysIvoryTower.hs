@@ -7,9 +7,13 @@ import Data.List as L
 import Data.Fixed
 import Data.HashSet as HS
 
+-- |An individual cell on a board, stored as it's (x, y) position.
 type Cell = (Int, Int)
+-- |Represents an instance of a board of Conway's Game of Life.
+-- Any cells present in the HashSet are alive, any that are not are dead.
 type Board = HashSet Cell
 
+-- |Advances a gameboard 1 generation forward.
 iterateBoard :: Board -> Board
 iterateBoard board = stepCells (HS.toList board) HS.empty
     where stepCells :: [Cell] -> Board -> Board
@@ -40,6 +44,8 @@ iterateBoard board = stepCells (HS.toList board) HS.empty
                                                                                  , dy <- [-1, 0, 1]
                                                                                  , (dx, dy) /= (0, 0)]
 
+-- |Advances a game one step forward.
+-- The first argument is the amount of time in seconds that this step occupies.
 iterateGame :: Float -> Game -> Game
 iterateGame deltaTime game = game { board  = if not $ paused game then iterateBoard (board game) else board game
                                   , camera = gameCamera { x    = x gameCamera + deltaX gameCamera * deltaTime
@@ -57,10 +63,12 @@ iterateGame deltaTime game = game { board  = if not $ paused game then iterateBo
 
 
 
+-- |Represents where and how to render the game.
 data Camera = Camera { x :: Float,    deltaX :: Float
                      , y :: Float,    deltaY :: Float
                      , zoom :: Float, deltaZoom :: Float}
 
+-- |Draws the cells onto the screen.
 drawCells :: Game -> Picture
 drawCells (Game {board = board, camera = camera}) = 
     scale (zoom camera) (zoom camera) $ translate (-(x camera)) (-(y camera)) $
@@ -71,6 +79,7 @@ drawCells (Game {board = board, camera = camera}) =
           floatize (x, y) = (fromIntegral x, fromIntegral y)
 
 -- #TODO Generate correct number of lines for zoom.
+-- |Draws a cell grid onto the screen.
 drawGrid :: Game -> Picture
 drawGrid (Game {camera = camera}) = pictures
     [ translate (-halfHorizontal) 0.0 $ scale 1.0 (zoom camera) $ translate 0.0 horizontalCameraOffset $ pictures 
@@ -105,12 +114,14 @@ drawGrid (Game {camera = camera}) = pictures
           verticalCameraOffset :: Float
           verticalCameraOffset = x camera `mod'` cellSize
 
+-- |Draws the given instance of the game to the screen.
 drawGame :: Game -> Picture
 drawGame game = pictures [ color white $ drawCells game
                          , if showGrid game then color white $ drawGrid game else Blank]
 
 
 
+-- |Enacts user input onto the game.
 gameInteract :: Event -> Game -> Game
 gameInteract (EventKey (Char key) keyState _ _) game =
     case key of
@@ -166,11 +177,13 @@ gameInteract _ game = game
 
 
 
+-- |Represents the state of a game.
 data Game = Game { board    :: Board
                  , camera   :: Camera
                  , paused   :: Bool
                  , showGrid :: Bool}
 
+-- |Generates a new, empty game.
 newGame :: Game
 newGame = Game { board  = HS.empty
                , camera = Camera { x = 0.0,    deltaX = 0.0
@@ -179,21 +192,26 @@ newGame = Game { board  = HS.empty
                , paused = True
                , showGrid = False}
 
+-- |What to display as the title of the window.
 title :: String
 title = "Conway's Ivory Tower"
--- The size of the screen in pixels.
+-- |The size of the screen in pixels.
 screenSize :: (Int, Int)
 screenSize = (600, 600)
+-- |The color of the window's background.
 backgroundColor :: Color
 backgroundColor = black
--- Number of times to advance the board per second.
+-- |Number of times to advance the board per second.
 iterationsPerSecond :: Int
 iterationsPerSecond = 10
 
+-- |How fast the camera moves.
 moveSpeed :: Float
 moveSpeed = 120.0
+-- |How fast the camera zooms.
 zoomSpeed :: Float
 zoomSpeed = 1.0
+-- |The size to draw the cells at.
 cellSize :: Float
 cellSize = 8.0
 
