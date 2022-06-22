@@ -10,7 +10,6 @@ import Data.HashSet as HS
 type Cell = (Int, Int)
 type Board = HashSet Cell
 
--- #TODO Switch over to using indexes with this function.
 iterateBoard :: Board -> Board
 iterateBoard board = stepCells (HS.toList board) HS.empty
     where stepCells :: [Cell] -> Board -> Board
@@ -54,7 +53,7 @@ iterateGame deltaTime game = game { board  = if not $ paused game then iterateBo
           zoomMinimum :: Float
           zoomMinimum = 0.05
           zoomMaximum :: Float
-          zoomMaximum = 100.0
+          zoomMaximum = 10.0
 
 
 
@@ -122,6 +121,7 @@ gameInteract (EventKey (Char key) keyState _ _) game =
          '1' -> game {camera = gameCamera {deltaZoom = if keyState == Down then  scaledZoomSpeed else 0.0}}
          '2' -> game {camera = gameCamera {deltaZoom = if keyState == Down then -scaledZoomSpeed else 0.0}}
          'g' -> if keyState == Down then game {showGrid = not $ showGrid game} else game
+         'r' -> if keyState == Down then newGame else game
          _   -> game
     where gameCamera :: Camera
           gameCamera = camera game
