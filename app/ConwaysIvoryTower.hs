@@ -29,7 +29,7 @@ iterateBoard board = stepCells (HS.toList board) HS.empty
                     tryAddOffspring :: Board
                     tryAddOffspring
                       | not $ L.null findOffspring = HS.union findOffspring accumulator
-                      | otherwise                   = accumulator
+                      | otherwise                  = accumulator
 
                     findOffspring :: Board
                     findOffspring = HS.fromList [deadNeighbor | deadNeighbor <- possibleNeighbors
@@ -110,9 +110,9 @@ drawGrid (Game {camera = camera}) = pictures
           verticalLineOffsets = [-halfHorizontal, -halfHorizontal + cellSize .. halfHorizontal]
 
           horizontalCameraOffset :: Float
-          horizontalCameraOffset = y camera `mod'` cellSize
+          horizontalCameraOffset = -(y camera `mod'` cellSize)
           verticalCameraOffset :: Float
-          verticalCameraOffset = x camera `mod'` cellSize
+          verticalCameraOffset = -(x camera `mod'` cellSize)
 
 -- |Draws the given instance of the game to the screen.
 drawGame :: Game -> Picture
