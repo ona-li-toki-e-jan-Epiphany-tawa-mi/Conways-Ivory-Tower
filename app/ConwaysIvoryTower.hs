@@ -71,10 +71,10 @@ data Camera = Camera { x :: Float,    deltaX :: Float
 -- |Draws the cells onto the screen.
 drawCells :: Game -> Picture
 drawCells (Game {board = board, camera = camera}) = 
-    scale (zoom camera) (zoom camera) $ translate (-(x camera)) (-(y camera)) $
+    translate (-x camera * zoom camera) (-y camera * zoom camera) $ scale (zoom camera) (zoom camera) $
     scale cellSize cellSize $ pictures $ 
         zipWith (uncurry translate) (L.map floatize $ HS.toList board)
-                                    (replicate (HS.size board) (rectangleSolid 1.0 1.0))
+                                    (replicate (HS.size board) (translate (-0.5) (-0.5) $ rectangleSolid 1.0 1.0))
     where floatize :: Cell -> (Float, Float)
           floatize (x, y) = (fromIntegral x, fromIntegral y)
 
@@ -82,11 +82,11 @@ drawCells (Game {board = board, camera = camera}) =
 -- |Draws a cell grid onto the screen.
 drawGrid :: Game -> Picture
 drawGrid (Game {camera = camera}) = pictures
-    [ translate (-halfHorizontal) 0.0 $ scale 1.0 (zoom camera) $ translate 0.0 horizontalCameraOffset $ pictures 
+    [ translate (-halfHorizontal) horizontalCameraOffset $ pictures 
         [translate 0.0 offset line | line <- replicate horizontalLineCount $ Line [ (0.0, 0.0)
                                                                                   , (horizontalLineSize, 0.0)]
                                    | offset <- horizontalLineOffsets]
-    , translate 0.0 (-halfVertical) $ scale (zoom camera) 1.0 $ translate verticalCameraOffset 0.0 $ pictures 
+    , translate verticalCameraOffset (-halfVertical) $ pictures 
         [translate offset 0.0 line | line <- replicate verticalLineCount $ Line [ (0.0, 0.0)
                                                                                 , (0.0, verticalLineSize)]
                                    | offset <- verticalLineOffsets]]
@@ -105,14 +105,14 @@ drawGrid (Game {camera = camera}) = pictures
           verticalLineCount = length verticalLineOffsets
 
           horizontalLineOffsets :: [Float]
-          horizontalLineOffsets = [-halfVertical, -halfVertical + cellSize .. halfVertical]
+          horizontalLineOffsets = 0 : [-cellSize * zoom camera, -cellSize * zoom camera * 2 .. -halfVertical] ++ [cellSize * zoom camera, cellSize * zoom camera * 2 .. halfVertical]
           verticalLineOffsets :: [Float]
-          verticalLineOffsets = [-halfHorizontal, -halfHorizontal + cellSize .. halfHorizontal]
+          verticalLineOffsets = 0 : [-cellSize * zoom camera, -cellSize * zoom camera * 2 .. -halfHorizontal] ++ [cellSize * zoom camera, cellSize * zoom camera * 2 .. halfHorizontal]
 
           horizontalCameraOffset :: Float
-          horizontalCameraOffset = -(y camera `mod'` cellSize)
+          horizontalCameraOffset = -(y camera `mod'` cellSize) * zoom camera 
           verticalCameraOffset :: Float
-          verticalCameraOffset = -(x camera `mod'` cellSize)
+          verticalCameraOffset = -(x camera `mod'` cellSize) * zoom camera 
 
 -- |Draws the given instance of the game to the screen.
 drawGame :: Game -> Picture
@@ -168,8 +168,8 @@ gameInteract (EventKey (MouseButton mouseButton) Down _ position) game =
          _          -> game
     where mouseToCellCoordinates :: Cell
           mouseToCellCoordinates =
-              ( floor $ (fst position / zoom gameCamera + x gameCamera) / cellSize + 0.5
-              , floor $ (snd position / zoom gameCamera + y gameCamera) / cellSize + 0.5)
+              ( floor $ (fst position / zoom gameCamera + x gameCamera) / cellSize + 1.0
+              , floor $ (snd position / zoom gameCamera + y gameCamera) / cellSize + 1.0)
 
           gameCamera :: Camera
           gameCamera = camera game
