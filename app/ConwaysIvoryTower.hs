@@ -80,7 +80,7 @@ drawCells (Game {board = board, camera = camera}) =
 
 -- |Draws a cell grid onto the screen.
 drawGrid :: Game -> Picture
-drawGrid (Game {camera = camera}) = pictures
+drawGrid (Game {camera = camera, screenSize = screenSize}) = pictures
     [ translate (-halfHorizontal) horizontalCameraOffset $ pictures 
         [translate 0.0 offset line | line <- replicate horizontalLineCount $ Line [ (0.0, 0.0)
                                                                                   , (horizontalLineSize, 0.0)]
@@ -133,7 +133,7 @@ gameInteract (EventKey (Char key) keyState _ _) game =
          '1' -> game {camera = gameCamera {deltaZoom = if keyState == Down then  scaledZoomSpeed else 0.0}}
          '2' -> game {camera = gameCamera {deltaZoom = if keyState == Down then -scaledZoomSpeed else 0.0}}
          'g' -> if keyState == Down then game {showGrid = not $ showGrid game} else game
-         'r' -> if keyState == Down then newGame else game
+         'r' -> if keyState == Down then game {board = HS.empty, paused = True} else game
          _   -> game
     where gameCamera :: Camera
           gameCamera = camera game
@@ -174,15 +174,17 @@ gameInteract (EventKey (MouseButton mouseButton) Down _ position) game =
 
           gameCamera :: Camera
           gameCamera = camera game
+gameInteract (EventResize newScreenSize) game = game {screenSize = newScreenSize}
 gameInteract _ game = game
 
 
 
 -- |Represents the state of a game.
-data Game = Game { board    :: Board
-                 , camera   :: Camera
-                 , paused   :: Bool
-                 , showGrid :: Bool}
+data Game = Game { board      :: Board
+                 , camera     :: Camera
+                 , paused     :: Bool
+                 , showGrid   :: Bool
+                 , screenSize :: (Int, Int)}
 
 -- |Generates a new, empty game.
 newGame :: Game
@@ -191,14 +193,15 @@ newGame = Game { board  = HS.empty
                                  , y = 0.0,    deltaY = 0.0
                                  , zoom = 1.0, deltaZoom = 0.0}
                , paused = True
-               , showGrid = False}
+               , showGrid = False
+               , screenSize = defaultScreenSize}
 
 -- |What to display as the title of the window.
 title :: String
 title = "Conway's Ivory Tower"
 -- |The size of the screen in pixels.
-screenSize :: (Int, Int)
-screenSize = (600, 600)
+defaultScreenSize :: (Int, Int)
+defaultScreenSize = (600, 600)
 -- |The color of the window's background.
 backgroundColor :: Color
 backgroundColor = black
@@ -217,6 +220,6 @@ cellSize :: Float
 cellSize = 8.0
 
 main :: IO ()
-main = play (InWindow title screenSize (100, 100)) backgroundColor
+main = play (InWindow title defaultScreenSize (100, 100)) backgroundColor
             iterationsPerSecond newGame
             drawGame gameInteract iterateGame
