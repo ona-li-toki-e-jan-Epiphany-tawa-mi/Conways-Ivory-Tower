@@ -48,18 +48,25 @@ iterateBoard board = stepCells (HS.toList board) HS.empty
 -- The first argument is the amount of time in seconds that this step occupies.
 iterateGame :: Float -> Game -> Game
 iterateGame deltaTime game = game { board  = if not $ paused game then iterateBoard (board game) else board game
-                                  , camera = gameCamera { x    = x gameCamera + deltaX gameCamera * deltaTime
-                                                        , y    = y gameCamera + deltaY gameCamera * deltaTime
+                                  , camera = gameCamera { x    = x gameCamera + scaledDeltaX
+                                                        , y    = y gameCamera + scaledDeltaY
                                                         , zoom = min zoomMaximum $ max nextZoom zoomMinimum}}
     where gameCamera :: Camera
           gameCamera = camera game
 
           nextZoom :: Float
-          nextZoom = zoom gameCamera + deltaZoom gameCamera * deltaTime
+          nextZoom = zoom gameCamera + scaledDeltaZoom
           zoomMinimum :: Float
           zoomMinimum = 0.05
           zoomMaximum :: Float
           zoomMaximum = 10.0
+
+          scaledDeltaX :: Float
+          scaledDeltaX = deltaX gameCamera / zoom gameCamera * deltaTime
+          scaledDeltaY :: Float
+          scaledDeltaY = deltaY gameCamera / zoom gameCamera * deltaTime
+          scaledDeltaZoom :: Float
+          scaledDeltaZoom = deltaZoom gameCamera * zoom gameCamera * deltaTime
 
 
 
@@ -68,6 +75,7 @@ data Camera = Camera { x :: Float,    deltaX :: Float
                      , y :: Float,    deltaY :: Float
                      , zoom :: Float, deltaZoom :: Float}
 
+-- #TODO Add ambient occlusion.
 -- |Draws the cells onto the screen.
 drawCells :: Game -> Picture
 drawCells (Game {board = board, camera = camera}) = 
@@ -126,41 +134,29 @@ drawGame game = pictures [ color white $ drawCells game
 gameInteract :: Event -> Game -> Game
 gameInteract (EventKey (Char key) keyState _ _) game =
     case key of
-         'w' -> game {camera = gameCamera {deltaY    = if keyState == Down then  scaledMoveSpeed else 0.0}}
-         's' -> game {camera = gameCamera {deltaY    = if keyState == Down then -scaledMoveSpeed else 0.0}}
-         'a' -> game {camera = gameCamera {deltaX    = if keyState == Down then -scaledMoveSpeed else 0.0}}
-         'd' -> game {camera = gameCamera {deltaX    = if keyState == Down then  scaledMoveSpeed else 0.0}}
-         '1' -> game {camera = gameCamera {deltaZoom = if keyState == Down then  scaledZoomSpeed else 0.0}}
-         '2' -> game {camera = gameCamera {deltaZoom = if keyState == Down then -scaledZoomSpeed else 0.0}}
+         'w' -> game {camera = gameCamera {deltaY    = if keyState == Down then  moveSpeed else 0.0}}
+         's' -> game {camera = gameCamera {deltaY    = if keyState == Down then -moveSpeed else 0.0}}
+         'a' -> game {camera = gameCamera {deltaX    = if keyState == Down then -moveSpeed else 0.0}}
+         'd' -> game {camera = gameCamera {deltaX    = if keyState == Down then  moveSpeed else 0.0}}
+         '1' -> game {camera = gameCamera {deltaZoom = if keyState == Down then  zoomSpeed else 0.0}}
+         '2' -> game {camera = gameCamera {deltaZoom = if keyState == Down then -zoomSpeed else 0.0}}
          'g' -> if keyState == Down then game {showGrid = not $ showGrid game} else game
          'r' -> if keyState == Down then game {board = HS.empty, paused = True} else game
          _   -> game
     where gameCamera :: Camera
           gameCamera = camera game
-
-          scaledMoveSpeed :: Float
-          scaledMoveSpeed = moveSpeed / zoom gameCamera
-
-          scaledZoomSpeed :: Float
-          scaledZoomSpeed = zoomSpeed ** zoom gameCamera
 gameInteract (EventKey (SpecialKey key) keyState _ _) game =
     case key of
-         KeyUp       -> game {camera = gameCamera {deltaY    = if keyState == Down then  scaledMoveSpeed else 0.0}}
-         KeyDown     -> game {camera = gameCamera {deltaY    = if keyState == Down then -scaledMoveSpeed else 0.0}}
-         KeyLeft     -> game {camera = gameCamera {deltaX    = if keyState == Down then -scaledMoveSpeed else 0.0}}
-         KeyRight    -> game {camera = gameCamera {deltaX    = if keyState == Down then  scaledMoveSpeed else 0.0}}
-         KeyPageUp   -> game {camera = gameCamera {deltaZoom = if keyState == Down then  scaledZoomSpeed else 0.0}}
-         KeyPageDown -> game {camera = gameCamera {deltaZoom = if keyState == Down then -scaledZoomSpeed else 0.0}}
+         KeyUp       -> game {camera = gameCamera {deltaY    = if keyState == Down then  moveSpeed else 0.0}}
+         KeyDown     -> game {camera = gameCamera {deltaY    = if keyState == Down then -moveSpeed else 0.0}}
+         KeyLeft     -> game {camera = gameCamera {deltaX    = if keyState == Down then -moveSpeed else 0.0}}
+         KeyRight    -> game {camera = gameCamera {deltaX    = if keyState == Down then  moveSpeed else 0.0}}
+         KeyPageUp   -> game {camera = gameCamera {deltaZoom = if keyState == Down then  zoomSpeed else 0.0}}
+         KeyPageDown -> game {camera = gameCamera {deltaZoom = if keyState == Down then -zoomSpeed else 0.0}}
          KeySpace    -> if keyState == Down then game {paused = not $ paused game} else game
          _           -> game
     where gameCamera :: Camera
           gameCamera = camera game
-
-          scaledMoveSpeed :: Float
-          scaledMoveSpeed = moveSpeed / zoom gameCamera
-
-          scaledZoomSpeed :: Float
-          scaledZoomSpeed = zoomSpeed ** zoom gameCamera
 gameInteract (EventKey (MouseButton mouseButton) Down _ position) game =
     case mouseButton of
          LeftButton -> if not $ mouseToCellCoordinates `HS.member` board game
