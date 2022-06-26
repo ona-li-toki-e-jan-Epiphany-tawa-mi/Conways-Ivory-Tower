@@ -75,7 +75,6 @@ data Camera = Camera { x :: Float,    deltaX :: Float
                      , y :: Float,    deltaY :: Float
                      , zoom :: Float, deltaZoom :: Float}
 
--- #TODO Add ambient occlusion.
 -- |Draws the cells onto the screen.
 drawCells :: Game -> Picture
 drawCells (Game {board = board, camera = camera}) = 
