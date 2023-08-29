@@ -15,12 +15,12 @@ An infinitely-sized interactive implementation of Conway's Game of Life.
  - Press Space to pause/unpause the game.
  - Click on any cell to toggle it.
 
-## How to build
+## How to run
 
 You will need ghc, cabal, and stack installed on your system. I recommend using [GHCup](https://www.haskell.org/ghcup "GHCup homepage.") to install them if not present.
 
 Run the following command(s) in the project directory:
 
 ```console
-$ stack build
+stack run
 ```
