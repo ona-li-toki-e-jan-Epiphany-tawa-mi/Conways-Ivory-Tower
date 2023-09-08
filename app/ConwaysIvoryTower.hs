@@ -1,5 +1,27 @@
 {-# LANGUAGE ParallelListComp #-}
 
+{- MIT License
+
+   Copyright (c) 2022 Nathaniel Needham
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE. -}
+
 module ConwaysIvoryTower (main) where
 import Graphics.Gloss
 import Graphics.Gloss.Interface.IO.Interact
@@ -36,7 +58,7 @@ iterateBoard board = stepCells (HS.toList board) HS.empty
                                                               , not $ deadNeighbor `HS.member` board
                                                               , not $ deadNeighbor `HS.member` accumulator
                                                               , length (findAlive $ findPossibleNeighbors deadNeighbor) == 3]
-                
+
                     possibleNeighbors :: [Cell]
                     possibleNeighbors = findPossibleNeighbors cell
                     findPossibleNeighbors :: Cell -> [Cell]
@@ -77,9 +99,9 @@ data Camera = Camera { x :: Float,    deltaX :: Float
 
 -- |Draws the cells onto the screen.
 drawCells :: Game -> Picture
-drawCells (Game {board = board, camera = camera}) = 
+drawCells (Game {board = board, camera = camera}) =
     scale (zoom camera) (zoom camera) $ translate (-x camera) (-y camera) $
-    scale cellSize cellSize $ pictures $ 
+    scale cellSize cellSize $ pictures $
         zipWith (uncurry translate) (L.map floatize $ HS.toList board)
                                     (replicate (HS.size board) (translate (-0.5) (-0.5) $ rectangleSolid 1.0 1.0))
     where floatize :: Cell -> (Float, Float)
@@ -88,11 +110,11 @@ drawCells (Game {board = board, camera = camera}) =
 -- |Draws a cell grid onto the screen.
 drawGrid :: Game -> Picture
 drawGrid (Game {camera = camera, screenSize = screenSize}) = pictures
-    [ translate (-halfHorizontal) horizontalCameraOffset $ pictures 
+    [ translate (-halfHorizontal) horizontalCameraOffset $ pictures
         [translate 0.0 offset line | line <- replicate horizontalLineCount $ Line [ (0.0, 0.0)
                                                                                   , (horizontalLineSize, 0.0)]
                                    | offset <- horizontalLineOffsets]
-    , translate verticalCameraOffset (-halfVertical) $ pictures 
+    , translate verticalCameraOffset (-halfVertical) $ pictures
         [translate offset 0.0 line | line <- replicate verticalLineCount $ Line [ (0.0, 0.0)
                                                                                 , (0.0, verticalLineSize)]
                                    | offset <- verticalLineOffsets]]
@@ -118,9 +140,9 @@ drawGrid (Game {camera = camera, screenSize = screenSize}) = pictures
           scaledCellSize = cellSize * zoom camera
 
           horizontalCameraOffset :: Float
-          horizontalCameraOffset = -(y camera `mod'` cellSize) * zoom camera 
+          horizontalCameraOffset = -(y camera `mod'` cellSize) * zoom camera
           verticalCameraOffset :: Float
-          verticalCameraOffset = -(x camera `mod'` cellSize) * zoom camera 
+          verticalCameraOffset = -(x camera `mod'` cellSize) * zoom camera
 
 -- |Draws the given instance of the game to the screen.
 drawGame :: Game -> Picture
