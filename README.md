@@ -36,3 +36,13 @@ stack run
 ```
 
 Alternatively, you could run it from a binary, either compiled from source or a precompiled version in the [RELEASES tab.](https://github.com/ona-li-toki-e-jan-Epiphany-tawa-mi/Conways-Ivory-Tower/releases "Conway's Ivory Tower RELEASES tab on GitHub")
+
+## Installation
+
+If you would like to run Conway's Ivory Tower from the command line from anywhere just by typing "conways-ivory-tower", run the following commands on the executable:
+
+```console
+sudo cp <executable file path> /usr/local/bin/conways-ivory-tower
+sudo chown root:root /usr/local/bin/conways-ivory-tower
+sudo chmod u=w,a+rx /usr/local/bin/conways-ivory-tower
+```
