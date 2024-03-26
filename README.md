@@ -1,3 +1,5 @@
+**!!NOTICE!!:** This project is no longer developed or maintained.
+
 # Conway's Ivory Tower
 
 An infinitely-sized interactive implementation of Conway's Game of Life.
@@ -17,7 +19,8 @@ An infinitely-sized interactive implementation of Conway's Game of Life.
 
 ## How to build
 
-You will need ghc 9.0.2, cabal, and stack installed on your system. I recommend using [GHCup](https://www.haskell.org/ghcup "GHCup homepage.") to install them if not present.
+You will need ghc 9.0.2, cabal, and stack installed on your system. I recommend
+using GHCup (https://www.haskell.org/ghcup) to install them if not present.
 
 Run the following command(s) in the project directory:
 
@@ -25,24 +28,15 @@ Run the following command(s) in the project directory:
 stack build
 ```
 
-The outputted executable will be somewhere in the .stack-work/ directory; the exact location will be shown in the output of the build command.
+The outputted executable will be somewhere in the `.stack-work/` directory; the
+exact location will be shown in the output of the build command.
 
 ## How to run
 
-You can run it directly from stack, for which you will need the programs listed in the "How to build" section, by running the following command(s) in the project directory:
+You can run it directly from stack, for which you will need the programs listed
+in the "How to build" section, by running the following command(s) in the
+project directory:
 
 ```console
 stack run
-```
-
-Alternatively, you could run it from a binary, either compiled from source or a precompiled version in the [RELEASES tab.](https://github.com/ona-li-toki-e-jan-Epiphany-tawa-mi/Conways-Ivory-Tower/releases "Conway's Ivory Tower RELEASES tab on GitHub")
-
-## Installation
-
-If you would like to run Conway's Ivory Tower from the command line from anywhere just by typing "conways-ivory-tower", run the following commands on the executable:
-
-```console
-sudo cp <executable file path> /usr/local/bin/conways-ivory-tower
-sudo chown root:root /usr/local/bin/conways-ivory-tower
-sudo chmod u=w,a+rx /usr/local/bin/conways-ivory-tower
 ```
